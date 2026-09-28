@@ -1,0 +1,146 @@
+<%- include('../partials/header', { title: 'إدارة التصنيفات' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>إدارة التصنيفات</h1>
+        <p>إضافة وتعديل وحذف التصنيفات</p>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <button class="btn btn-primary" onclick="openModal()" data-track="add_category"><i class="fas fa-plus"></i> إضافة تصنيف</button>
+    </div>
+
+    <div id="categoriesContent">
+        <div class="skeleton" style="height: 300px;"></div>
+    </div>
+</main>
+
+<div class="modal-overlay" id="categoryModal">
+    <div class="modal">
+        <h3 id="modalTitle">إضافة تصنيف</h3>
+        <div id="modalAlert"></div>
+        <form id="categoryForm">
+            <input type="hidden" id="categoryId">
+            <div class="form-group">
+                <label>اسم التصنيف</label>
+                <input type="text" class="form-control" id="categoryName" required>
+            </div>
+            <div class="form-group">
+                <label>التصنيف الأب</label>
+                <select class="form-control" id="parentId">
+                    <option value="">بدون أب</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;" id="saveBtn">حفظ</button>
+                <button type="button" class="btn btn-ghost" style="flex: 1;" onclick="closeModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadCategories() {
+        const container = document.getElementById('categoriesContent');
+        const res = await apiFetch('/categories/api/v1');
+
+        if (res.ok && res.data.data.length > 0) {
+            const categories = res.data.data;
+            document.getElementById('parentId').innerHTML = '<option value="">بدون أب</option>' +
+                categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>التصنيف الأب</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${categories.map(cat => `
+                                <tr>
+                                    <td>${cat.name}</td>
+                                    <td>${cat.parent?.name || '-'}</td>
+                                    <td><span class="badge ${cat.is_active ? 'badge-success' : 'badge-error'}">${cat.is_active ? 'نشط' : 'غير نشط'}</span></td>
+                                    <td>
+                                        <button class="btn btn-ghost" style="padding: 4px 12px;" onclick="editCategory(${cat.id}, '${cat.name}', ${cat.parent_id || 'null'})"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-ghost" style="padding: 4px 12px; color: var(--error);" onclick="deleteCategory(${cat.id})"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-state"><p>لا توجد تصنيفات</p></div>';
+        }
+    }
+
+    function openModal() {
+        document.getElementById('categoryModal').classList.add('active');
+        document.getElementById('modalTitle').textContent = 'إضافة تصنيف';
+        document.getElementById('categoryForm').reset();
+        document.getElementById('categoryId').value = '';
+    }
+
+    function closeModal() {
+        document.getElementById('categoryModal').classList.remove('active');
+    }
+
+    function editCategory(id, name, parentId) {
+        document.getElementById('categoryModal').classList.add('active');
+        document.getElementById('modalTitle').textContent = 'تعديل تصنيف';
+        document.getElementById('categoryId').value = id;
+        document.getElementById('categoryName').value = name;
+        document.getElementById('parentId').value = parentId || '';
+    }
+
+    document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('saveBtn');
+        const alertDiv = document.getElementById('modalAlert');
+        const id = document.getElementById('categoryId').value;
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        const data = {
+            name: document.getElementById('categoryName').value,
+            parent_id: document.getElementById('parentId').value || null
+        };
+
+        const res = await apiFetch(id ? `/categories/api/v1/${id}` : '/categories/api/v1', {
+            method: id ? 'PUT' : 'POST',
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok && res.data.status === 'success') {
+            closeModal();
+            loadCategories();
+        } else {
+            alertDiv.innerHTML = `<div class="alert alert-error">${res.data.message || 'حدث خطأ'}</div>`;
+        }
+
+        btn.innerHTML = '<span>حفظ</span>';
+        btn.disabled = false;
+    });
+
+    async function deleteCategory(id) {
+        if (!confirm('هل أنت متأكد من حذف هذا التصنيف؟')) return;
+        const res = await apiFetch(`/categories/api/v1/${id}`, { method: 'DELETE' });
+        if (res.ok) { showToast('تم حذف التصنيف'); loadCategories(); }
+        else { showToast(res.data.message || 'حدث خطأ', 'error'); }
+    }
+
+    loadCategories();
+</script>
+</body>
+</html>

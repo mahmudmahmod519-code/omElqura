@@ -1,0 +1,86 @@
+<%- include('../partials/header', { title: 'إنشاء حساب' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div style="max-width: 450px; margin: 2rem auto;">
+        <div class="card" style="padding: 3rem;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; color: var(--primary);">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h2 style="color: var(--primary); margin-bottom: 0.5rem;">إنشاء حساب جديد</h2>
+                <p style="color: var(--text-muted);">انضم إلينا واستمتع بتجربة شراء مميزة</p>
+            </div>
+
+            <div id="registerAlert"></div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> الاسم الكامل</label>
+                    <input type="text" class="form-control" id="name" required placeholder="أدخل اسمك الكامل">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
+                    <input type="email" class="form-control" id="email" required placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-phone"></i> رقم الهاتف</label>
+                    <input type="tel" class="form-control" id="phone" placeholder="01xxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <input type="password" class="form-control" id="password" required placeholder="8 أحرف على الأقل">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> تأكيد كلمة المرور</label>
+                    <input type="password" class="form-control" id="password_confirmation" required placeholder="أعد إدخال كلمة المرور">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="registerBtn" data-track="register_submit">
+                    <span>إنشاء الحساب</span>
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #f3f4f6;">
+                <p style="color: var(--text-muted);">لديك حساب بالفعل؟ <a href="/auth/login" style="color: var(--secondary); font-weight: 600;" data-track="login_link">تسجيل الدخول</a></p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('registerBtn');
+        const alertDiv = document.getElementById('registerAlert');
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+        btn.disabled = true;
+
+        const data = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            password: document.getElementById('password').value,
+            password_confirmation: document.getElementById('password_confirmation').value
+        };
+
+        const res = await apiFetch('/auth/api/v1/register', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok && res.data.status === 'success') {
+            alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم إنشاء الحساب بنجاح! جاري التحويل...</div>';
+            setTimeout(() => window.location.href = '/', 1000);
+        } else {
+            const errors = res.data.errors ? res.data.errors.join('<br>') : (res.data.message || 'حدث خطأ');
+            alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${errors}</div>`;
+            btn.innerHTML = '<span>إنشاء الحساب</span>';
+            btn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

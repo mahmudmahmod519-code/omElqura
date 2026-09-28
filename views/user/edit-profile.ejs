@@ -1,0 +1,131 @@
+<%- include('../partials/header', { title: 'تعديل الملف الشخصي' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>تعديل الملف الشخصي</h1>
+        <p>تحديث بياناتك الشخصية</p>
+    </div>
+
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div id="profileContent">
+            <div class="skeleton" style="height: 400px;"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadProfile() {
+        const container = document.getElementById('profileContent');
+        const res = await apiFetch('/users/api/v1/profile');
+
+        if (res.ok) {
+            const user = res.data.data;
+            container.innerHTML = `
+                <div class="card" style="padding: 2rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 1.5rem;">البيانات الشخصية</h3>
+                    <div id="profileAlert"></div>
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label>الاسم</label>
+                            <input type="text" class="form-control" id="name" value="${user.name}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>رقم الهاتف</label>
+                            <input type="tel" class="form-control" id="phone" value="${user.phone || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>العنوان</label>
+                            <input type="text" class="form-control" id="address" value="${user.address || ''}">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;" id="saveBtn" data-track="save_profile">حفظ التغييرات</button>
+                    </form>
+                </div>
+
+                <div class="card" style="padding: 2rem; margin-top: 2rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 1.5rem;">تغيير كلمة المرور</h3>
+                    <div id="passwordAlert"></div>
+                    <form id="passwordForm">
+                        <div class="form-group">
+                            <label>كلمة المرور الحالية</label>
+                            <input type="password" class="form-control" id="current_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>كلمة المرور الجديدة</label>
+                            <input type="password" class="form-control" id="new_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>تأكيد كلمة المرور الجديدة</label>
+                            <input type="password" class="form-control" id="confirm_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;" id="changeBtn" data-track="change_password">تغيير كلمة المرور</button>
+                    </form>
+                </div>
+            `;
+
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('saveBtn');
+                const alertDiv = document.getElementById('profileAlert');
+
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+                btn.disabled = true;
+
+                const res = await apiFetch('/users/api/v1/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name: document.getElementById('name').value,
+                        phone: document.getElementById('phone').value,
+                        address: document.getElementById('address').value
+                    })
+                });
+
+                if (res.ok && res.data.status === 'success') {
+                    alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم تحديث البيانات بنجاح!</div>';
+                } else {
+                    alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${res.data.message || 'حدث خطأ'}</div>`;
+                }
+
+                btn.innerHTML = '<span>حفظ التغييرات</span>';
+                btn.disabled = false;
+            });
+
+            document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('changeBtn');
+                const alertDiv = document.getElementById('passwordAlert');
+
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التغيير...';
+                btn.disabled = true;
+
+                const res = await apiFetch('/users/api/v1/change-password', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        current_password: document.getElementById('current_password').value,
+                        new_password: document.getElementById('new_password').value,
+                        confirm_password: document.getElementById('confirm_password').value
+                    })
+                });
+
+                if (res.ok && res.data.status === 'success') {
+                    alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم تغيير كلمة المرور بنجاح!</div>';
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    const errors = res.data.errors ? res.data.errors.join('<br>') : (res.data.message || 'حدث خطأ');
+                    alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${errors}</div>`;
+                }
+
+                btn.innerHTML = '<span>تغيير كلمة المرور</span>';
+                btn.disabled = false;
+            });
+        } else {
+            container.innerHTML = '<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> فشل في تحميل البيانات</div>';
+        }
+    }
+
+    loadProfile();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<%- include('../partials/header', { title: 'خطأ في السيرفر' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="empty-state" style="padding: 6rem 2rem;">
+        <div style="font-size: 8rem; font-weight: 800; color: var(--error);">500</div>
+        <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;">خطأ في السيرفر</h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">عذراً، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى لاحقاً.</p>
+        <a href="/" class="btn btn-primary" data-track="back_to_home"><i class="fas fa-home"></i> العودة للرئيسية</a>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<%- include('../partials/header', { title: 'إدارة المستخدمين' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>إدارة المستخدمين</h1>
+        <p>إدارة حسابات المستخدمين والأدوار</p>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <input type="text" class="form-control" id="searchInput" placeholder="بحث بالاسم أو البريد..." style="max-width: 300px;">
+    </div>
+
+    <div id="usersContent">
+        <div class="skeleton" style="height: 300px;"></div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadUsers() {
+        const container = document.getElementById('usersContent');
+        const search = document.getElementById('searchInput')?.value || '';
+        const res = await apiFetch(`/users/api/v1/admin/all?q=${search}`);
+
+        if (res.ok && res.data.data.length > 0) {
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>البريد</th>
+                                <th>الهاتف</th>
+                                <th>الدور</th>
+                                <th>تاريخ التسجيل</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${res.data.data.map(user => `
+                                <tr>
+                                    <td>${user.name}</td>
+                                    <td>${user.email}</td>
+                                    <td>${user.phone || '-'}</td>
+                                    <td><span class="badge ${user.role === 'admin' ? 'badge-warning' : 'badge-info'}">${user.role === 'admin' ? 'مدير' : 'عميل'}</span></td>
+                                    <td>${formatDate(user.created_at)}</td>
+                                    <td>
+                                        <button class="btn btn-ghost" style="padding: 4px 12px;" onclick="changeRole(${user.id}, '${user.role === 'admin' ? 'customer' : 'admin'}')">
+                                            ${user.role === 'admin' ? 'إزالة الإدارة' : 'جعل مدير'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-state"><p>لا يوجد مستخدمين</p></div>';
+        }
+    }
+
+    async function changeRole(userId, newRole) {
+        if (!confirm(`هل أنت متأكد من تغيير الدور إلى "${newRole === 'admin' ? 'مدير' : 'عميل'}"؟`)) return;
+        const res = await apiFetch(`/users/api/v1/admin/${userId}/role`, {
+            method: 'PUT',
+            body: JSON.stringify({ role: newRole })
+        });
+        if (res.ok) { showToast('تم تحديث الدور'); loadUsers(); }
+        else { showToast(res.data.message || 'حدث خطأ', 'error'); }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', () => loadUsers());
+    loadUsers();
+</script>
+</body>
+</html>

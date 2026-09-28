@@ -1,0 +1,115 @@
+<%- include('../partials/header', { title: 'السلة' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>سلة المشتريات</h1>
+        <p>مراجعة المنتجات المضافة</p>
+    </div>
+
+    <div id="cartContent">
+        <div class="skeleton" style="height: 300px;"></div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadCart() {
+        const container = document.getElementById('cartContent');
+        const res = await apiFetch('/orders/api/v1/my-orders?status=cart');
+
+        if (res.ok && res.data.data.length > 0) {
+            const cart = res.data.data[0];
+            const items = cart.items || [];
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-shopping-cart"></i></div>
+                        <h3>السلة فارغة</h3>
+                        <p>لم تقم بإضافة أي منتجات بعد</p>
+                        <a href="/perfumes" class="btn btn-primary" data-track="continue_shopping">تسوق الآن</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="grid" style="grid-template-columns: 1fr 350px; gap: 2rem;">
+                    <div>
+                        ${items.map(item => `
+                            <div class="card" style="padding: 1.5rem; margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                                <img src="${item.image_url || '/images/placeholder.jpg'}" alt="${item.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius);">
+                                <div style="flex: 1;">
+                                    <h4>${item.name}</h4>
+                                    <p style="color: var(--text-muted);">${formatPrice(item.unit_price)}</p>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <button class="btn btn-ghost" onclick="updateQuantity(${item.id}, ${item.quantity - 1})">-</button>
+                                    <span style="min-width: 30px; text-align: center; font-weight: 600;">${item.quantity}</span>
+                                    <button class="btn btn-ghost" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
+                                </div>
+                                <button class="btn btn-ghost" style="color: var(--error);" onclick="removeItem(${item.id})"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="card" style="padding: 2rem; height: fit-content;">
+                        <h3 style="color: var(--primary); margin-bottom: 1rem;">ملخص الطلب</h3>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                            <span>الإجمالي:</span>
+                            <strong style="font-size: 1.25rem; color: var(--secondary);">${formatPrice(cart.total_amount)}</strong>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%;" onclick="checkout()" data-track="checkout_btn">
+                            <i class="fas fa-credit-card"></i> إتمام الشراء
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <h3>السلة فارغة</h3>
+                    <p>لم تقم بإضافة أي منتجات بعد</p>
+                    <a href="/perfumes" class="btn btn-primary" data-track="continue_shopping">تسوق الآن</a>
+                </div>
+            `;
+        }
+    }
+
+    async function updateQuantity(itemId, quantity) {
+        const res = await apiFetch(`/orders/api/v1/update-item/${itemId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ quantity })
+        });
+
+        if (res.ok) {
+            loadCart();
+        } else {
+            showToast(res.data.message || 'حدث خطأ', 'error');
+        }
+    }
+
+    async function removeItem(itemId) {
+        const res = await apiFetch(`/orders/api/v1/remove-item/${itemId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            showToast('تم حذف العنصر');
+            loadCart();
+        } else {
+            showToast(res.data.message || 'حدث خطأ', 'error');
+        }
+    }
+
+    async function checkout() {
+        window.location.href = '/orders/checkout';
+    }
+
+    loadCart();
+</script>
+</body>
+</html>

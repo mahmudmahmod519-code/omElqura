@@ -1,0 +1,93 @@
+<%- include('../partials/header', { title: 'الأسئلة الشائعة' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>الأسئلة الشائعة</h1>
+        <p>إجابات على أكثر الأسئلة شيوعاً</p>
+    </div>
+
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="card" style="padding: 2rem;">
+            <div style="border-bottom: 1px solid #f3f4f6; padding: 1rem 0;">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
+                    <span>هل جميع العطور أصلية؟</span>
+                    <i class="fas fa-chevron-down"></i>
+                </h3>
+                <div style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                    <p>نعم، جميع عطورنا أصلية 100% ونضمن ذلك مع كل عملية شراء. نتعامل مباشرة مع الوكلاء المعتمدين والموزعين الرسميين.</p>
+                </div>
+            </div>
+
+            <div style="border-bottom: 1px solid #f3f4f6; padding: 1rem 0;">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
+                    <span>كم يستغرق وقت التوصيل؟</span>
+                    <i class="fas fa-chevron-down"></i>
+                </h3>
+                <div style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                    <p>التوصيل يستغرق من 2-5 أيام عمل حسب المحافظة. القاهرة والجيزة خلال 2-3 أيام.</p>
+                </div>
+            </div>
+
+            <div style="border-bottom: 1px solid #f3f4f6; padding: 1rem 0;">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
+                    <span>ما هي طرق الدفع المتاحة؟</span>
+                    <i class="fas fa-chevron-down"></i>
+                </h3>
+                <div style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                    <p>نوفر عدة طرق للدفع: الدفع عند الاستلام (Cash)، التحويل البنكي عبر InstaPay، والدفع الإلكتروني عبر Paymob.</p>
+                </div>
+            </div>
+
+            <div style="border-bottom: 1px solid #f3f4f6; padding: 1rem 0;">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
+                    <span>هل يمكنني إرجاع المنتج؟</span>
+                    <i class="fas fa-chevron-down"></i>
+                </h3>
+                <div style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                    <p>نعم، يمكنك إرجاع المنتج خلال 14 يوماً من تاريخ الاستلام بشرط أن يكون في حالته الأصلية مع التغليف.</p>
+                </div>
+            </div>
+
+            <div style="border-bottom: 1px solid #f3f4f6; padding: 1rem 0;">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
+                    <span>كيف أعرف حجم العطر المناسب لي؟</span>
+                    <i class="fas fa-chevron-down"></i>
+                </h3>
+                <div style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                    <p>نوفر جميع الأحجام المتاحة لكل عطر. يمكنك البدء بالحجم الصغير (50 مل) إذا كان أول مرة تجرب فيها العطر.</p>
+                </div>
+            </div>
+
+            <div style="padding: 1rem 0;">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
+                    <span>هل تقدمون خدمات الهدايا؟</span>
+                    <i class="fas fa-chevron-down"></i>
+                </h3>
+                <div style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                    <p>نعم، نوفر تغليف هدايا فاخر مع إمكانية إضافة رسالة شخصية. يمكنك ذلك من صفحة إتمام الطلب.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    function toggleFaq(element) {
+        const content = element.nextElementSibling;
+        const icon = element.querySelector('i');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+</script>
+</body>
+</html>

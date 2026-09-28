@@ -1,0 +1,110 @@
+<%- include('../partials/header', { title: 'الرئيسية' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>عطور أم القرى</h1>
+        <p>اكتشف عالم العطور الأصلية الفاخرة من أفضل الماركات العالمية</p>
+        <a href="/perfumes" class="btn btn-primary" style="font-size: 1.1rem; padding: 16px 40px;" data-track="cta_primary">
+            <i class="fas fa-shopping-bag"></i>
+            تسوق الآن
+        </a>
+    </section>
+
+    <!-- Best Sellers -->
+    <section class="section">
+        <h2 class="section-title">الأكثر مبيعاً</h2>
+        <div class="grid grid-4" id="bestSellers">
+            <div class="skeleton" style="height: 350px;"></div>
+            <div class="skeleton" style="height: 350px;"></div>
+            <div class="skeleton" style="height: 350px;"></div>
+            <div class="skeleton" style="height: 350px;"></div>
+        </div>
+    </section>
+
+    <!-- Latest Perfumes -->
+    <section class="section">
+        <h2 class="section-title">أحدث الإضافات</h2>
+        <div class="grid grid-4" id="latestPerfumes">
+            <div class="skeleton" style="height: 350px;"></div>
+            <div class="skeleton" style="height: 350px;"></div>
+            <div class="skeleton" style="height: 350px;"></div>
+            <div class="skeleton" style="height: 350px;"></div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section">
+        <h2 class="section-title">لماذا تختارنا؟</h2>
+        <div class="grid grid-3">
+            <div class="card" style="padding: 2.5rem; text-align: center;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; color: var(--primary);">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <h3 style="margin-bottom: 0.75rem;">شحن سريع</h3>
+                <p style="color: var(--text-muted);">توصيل سريع لجميع المحافظات</p>
+            </div>
+            <div class="card" style="padding: 2.5rem; text-align: center;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; color: var(--primary);">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 style="margin-bottom: 0.75rem;">أصالة مضمونة</h3>
+                <p style="color: var(--text-muted);">جميع منتجاتنا أصلية 100%</p>
+            </div>
+            <div class="card" style="padding: 2.5rem; text-align: center;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; color: var(--primary);">
+                    <i class="fas fa-undo"></i>
+                </div>
+                <h3 style="margin-bottom: 0.75rem;">استرجاع سهل</h3>
+                <p style="color: var(--text-muted);">إمكانية الاسترجاع خلال 14 يوم</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadHomePage() {
+        const bestSellersRes = await apiFetch('/perfumes/api/v1?is_best_seller=true&limit=8');
+        const latestRes = await apiFetch('/perfumes/api/v1?sort_by=created_at&sort_order=DESC&limit=8');
+
+        const bestSellersContainer = document.getElementById('bestSellers');
+        const latestContainer = document.getElementById('latestPerfumes');
+
+        if (bestSellersRes.ok && bestSellersRes.data.data.length > 0) {
+            bestSellersContainer.innerHTML = bestSellersRes.data.data.map(perfume => `
+                <a href="/perfumes/${perfume.id}" class="product-card" data-track="product_card">
+                    <img src="${perfume.image_url || '/images/placeholder.jpg'}" alt="${perfume.name}" class="product-card-image">
+                    <div class="product-card-body">
+                        <h3 class="product-card-title">${perfume.name}</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">${perfume.brand?.name || ''}</p>
+                        <p class="product-card-price">${formatPrice(perfume.price)}</p>
+                    </div>
+                </a>
+            `).join('');
+        } else {
+            bestSellersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>لا توجد منتجات حالياً</p></div>';
+        }
+
+        if (latestRes.ok && latestRes.data.data.length > 0) {
+            latestContainer.innerHTML = latestRes.data.data.map(perfume => `
+                <a href="/perfumes/${perfume.id}" class="product-card" data-track="product_card">
+                    <img src="${perfume.image_url || '/images/placeholder.jpg'}" alt="${perfume.name}" class="product-card-image">
+                    <div class="product-card-body">
+                        <h3 class="product-card-title">${perfume.name}</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">${perfume.brand?.name || ''}</p>
+                        <p class="product-card-price">${formatPrice(perfume.price)}</p>
+                    </div>
+                </a>
+            `).join('');
+        } else {
+            latestContainer.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>لا توجد منتجات حالياً</p></div>';
+        }
+    }
+
+    loadHomePage();
+</script>
+</body>
+</html>

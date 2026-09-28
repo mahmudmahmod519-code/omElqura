@@ -1,0 +1,154 @@
+<nav class="navbar" id="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-logo">
+            <div class="navbar-logo-icon">
+                <i class="fas fa-mosque"></i>
+            </div>
+            <div class="navbar-logo-text">
+                <span>عطور أم القرى</span>
+                <span>UM AL-QURA PERFUMES</span>
+            </div>
+        </a>
+
+        <ul class="navbar-links">
+            <li><a href="/">الرئيسية</a></li>
+            <li><a href="/perfumes">المتجر</a></li>
+            <li><a href="/about-us">من نحن</a></li>
+            <li><a href="/contact-us">اتصل بنا</a></li>
+            <li><a href="/faq">الأسئلة الشائعة</a></li>
+        </ul>
+
+        <div class="navbar-actions">
+            <% if (login) { %>
+                <a href="/orders/cart" class="btn btn-glass" data-track="cart_icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <a href="/users/profile" class="btn btn-outline" data-track="profile_icon">
+                    <i class="fas fa-user"></i>
+                    <span>حسابي</span>
+                </a>
+                <button class="btn btn-ghost" onclick="logout()" data-track="logout_btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            <% } else { %>
+                <a href="/auth/login" class="btn btn-ghost" data-track="login_btn">تسجيل الدخول</a>
+                <a href="/auth/register" class="btn btn-primary" data-track="register_btn">إنشاء حساب</a>
+            <% } %>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" data-track="mobile_menu_btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+    <ul class="mobile-menu-links">
+        <li><a href="/">الرئيسية</a></li>
+        <li><a href="/perfumes">المتجر</a></li>
+        <li><a href="/about-us">من نحن</a></li>
+        <li><a href="/contact-us">اتصل بنا</a></li>
+        <li><a href="/faq">الأسئلة الشائعة</a></li>
+        <% if (login) { %>
+            <li><a href="/orders/cart">السلة</a></li>
+            <li><a href="/users/profile">حسابي</a></li>
+            <li><a href="#" onclick="logout()">خروج</a></li>
+        <% } else { %>
+            <li><a href="/auth/login">تسجيل الدخول</a></li>
+            <li><a href="/auth/register">إنشاء حساب</a></li>
+        <% } %>
+    </ul>
+</div>
+
+<script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+        const navbar = document.getElementById('navbar');
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+        const mobileMenu = document.getElementById('mobileMenu');
+        mobileMenu.classList.toggle('active');
+    }
+
+    // Close mobile menu on link click
+    document.querySelectorAll('.mobile-menu-links a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.remove('active');
+        });
+    });
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Fetch API helper
+    async function apiFetch(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            const data = await response.json();
+            return { ok: response.ok, data };
+        } catch (error) {
+            console.error('API Error:', error);
+            return { ok: false, data: { message: 'حدث خطأ في الاتصال' } };
+        }
+    }
+
+    // Format price
+    function formatPrice(price) {
+        return parseFloat(price).toFixed(2) + ' جنيه';
+    }
+
+    // Format date
+    function formatDate(date) {
+        return new Date(date).toLocaleDateString('ar-EG');
+    }
+
+    // Logout function
+    async function logout() {
+        const res = await apiFetch('/auth/api/v1/logout', { method: 'POST' });
+        if (res.ok) {
+            showToast('تم تسجيل الخروج بنجاح');
+            setTimeout(() => window.location.href = '/', 1000);
+        }
+    }
+
+    // Update cart count
+    async function updateCartCount() {
+        try {
+            const res = await apiFetch('/orders/api/v1/my-orders?status=cart');
+            if (res.ok && res.data.data.length > 0) {
+                const cart = res.data.data[0];
+                const count = cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+                const cartCountEl = document.getElementById('cartCount');
+                if (cartCountEl) cartCountEl.textContent = count;
+            }
+        } catch (e) {
+            // Silently fail
+        }
+    }
+
+    // Update cart count on page load
+    if (document.getElementById('cartCount')) {
+        updateCartCount();
+    }
+</script>

@@ -1,0 +1,85 @@
+<%- include('../partials/header', { title: 'إدارة العطور' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>إدارة العطور</h1>
+        <p>إضافة وتعديل وحذف المنتجات</p>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <a href="/perfumes/admin/create" class="btn btn-primary" data-track="add_perfume"><i class="fas fa-plus"></i> إضافة عطر جديد</a>
+    </div>
+
+    <div id="perfumesContent">
+        <div class="skeleton" style="height: 300px;"></div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadPerfumes() {
+        const container = document.getElementById('perfumesContent');
+        const res = await apiFetch('/perfumes/api/v1?limit=100');
+
+        if (res.ok && res.data.data.length > 0) {
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الصورة</th>
+                                <th>الاسم</th>
+                                <th>الماركة</th>
+                                <th>السعر</th>
+                                <th>المخزون</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${res.data.data.map(perfume => `
+                                <tr>
+                                    <td><img src="${perfume.image_url || '/images/placeholder.jpg'}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;"></td>
+                                    <td>${perfume.name}</td>
+                                    <td>${perfume.brand?.name || '-'}</td>
+                                    <td>${formatPrice(perfume.price)}</td>
+                                    <td>${perfume.stock_quantity}</td>
+                                    <td>
+                                        <span class="badge ${perfume.is_active ? 'badge-success' : 'badge-error'}">
+                                            ${perfume.is_active ? 'نشط' : 'غير نشط'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/perfumes/admin/${perfume.id}/edit" class="btn btn-ghost" style="padding: 4px 12px;"><i class="fas fa-edit"></i></a>
+                                        <button class="btn btn-ghost" style="padding: 4px 12px; color: var(--error);" onclick="deletePerfume(${perfume.id})"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-state"><p>لا توجد عطور</p><a href="/perfumes/admin/create" class="btn btn-primary">إضافة عطر</a></div>';
+        }
+    }
+
+    async function deletePerfume(id) {
+        if (!confirm('هل أنت متأكد من حذف هذا العطر؟')) return;
+
+        const res = await apiFetch(`/perfumes/api/v1/${id}`, { method: 'DELETE' });
+
+        if (res.ok) {
+            showToast('تم حذف العطر بنجاح');
+            loadPerfumes();
+        } else {
+            showToast(res.data.message || 'حدث خطأ', 'error');
+        }
+    }
+
+    loadPerfumes();
+</script>
+</body>
+</html>

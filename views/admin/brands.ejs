@@ -1,0 +1,142 @@
+<%- include('../partials/header', { title: 'إدارة الماركات' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>إدارة الماركات</h1>
+        <p>إضافة وتعديل وحذف الماركات</p>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <button class="btn btn-primary" onclick="openModal()" data-track="add_brand"><i class="fas fa-plus"></i> إضافة ماركة</button>
+    </div>
+
+    <div id="brandsContent">
+        <div class="skeleton" style="height: 300px;"></div>
+    </div>
+</main>
+
+<div class="modal-overlay" id="brandModal">
+    <div class="modal">
+        <h3 id="modalTitle">إضافة ماركة</h3>
+        <div id="modalAlert"></div>
+        <form id="brandForm" enctype="multipart/form-data">
+            <input type="hidden" id="brandId">
+            <div class="form-group">
+                <label>اسم الماركة</label>
+                <input type="text" class="form-control" id="brandName" required>
+            </div>
+            <div class="form-group">
+                <label>الشعار</label>
+                <input type="file" class="form-control" id="brandLogo" accept="image/*">
+                <div id="logoPreview"></div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;" id="saveBtn">حفظ</button>
+                <button type="button" class="btn btn-ghost" style="flex: 1;" onclick="closeModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadBrands() {
+        const container = document.getElementById('brandsContent');
+        const res = await apiFetch('/brands/api/v1');
+
+        if (res.ok && res.data.data.length > 0) {
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الشعار</th>
+                                <th>الاسم</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${res.data.data.map(brand => `
+                                <tr>
+                                    <td><img src="${brand.logo_url || '/images/placeholder.jpg'}" style="width: 50px; height: 50px; object-fit: contain; border-radius: 8px;"></td>
+                                    <td>${brand.name}</td>
+                                    <td>
+                                        <button class="btn btn-ghost" style="padding: 4px 12px;" onclick="editBrand(${brand.id}, '${brand.name}', '${brand.logo_url || ''}')"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-ghost" style="padding: 4px 12px; color: var(--error);" onclick="deleteBrand(${brand.id})"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-state"><p>لا توجد ماركات</p></div>';
+        }
+    }
+
+    function openModal() {
+        document.getElementById('brandModal').classList.add('active');
+        document.getElementById('modalTitle').textContent = 'إضافة ماركة';
+        document.getElementById('brandForm').reset();
+        document.getElementById('brandId').value = '';
+        document.getElementById('logoPreview').innerHTML = '';
+    }
+
+    function closeModal() {
+        document.getElementById('brandModal').classList.remove('active');
+    }
+
+    function editBrand(id, name, logoUrl) {
+        document.getElementById('brandModal').classList.add('active');
+        document.getElementById('modalTitle').textContent = 'تعديل ماركة';
+        document.getElementById('brandId').value = id;
+        document.getElementById('brandName').value = name;
+        if (logoUrl) {
+            document.getElementById('logoPreview').innerHTML = `<img src="${logoUrl}" style="max-width: 100px; margin-top: 0.5rem; border-radius: var(--radius);">`;
+        }
+    }
+
+    document.getElementById('brandForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('saveBtn');
+        const alertDiv = document.getElementById('modalAlert');
+        const id = document.getElementById('brandId').value;
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('name', document.getElementById('brandName').value);
+        const logoFile = document.getElementById('brandLogo').files[0];
+        if (logoFile) formData.append('logo', logoFile);
+
+        const res = await apiFetch(id ? `/brands/api/v1/${id}` : '/brands/api/v1', {
+            method: id ? 'PUT' : 'POST',
+            body: formData
+        });
+
+        if (res.ok && res.data.status === 'success') {
+            closeModal();
+            loadBrands();
+        } else {
+            alertDiv.innerHTML = `<div class="alert alert-error">${res.data.message || 'حدث خطأ'}</div>`;
+        }
+
+        btn.innerHTML = '<span>حفظ</span>';
+        btn.disabled = false;
+    });
+
+    async function deleteBrand(id) {
+        if (!confirm('هل أنت متأكد من حذف هذه الماركة؟')) return;
+        const res = await apiFetch(`/brands/api/v1/${id}`, { method: 'DELETE' });
+        if (res.ok) { showToast('تم حذف الماركة'); loadBrands(); }
+        else { showToast(res.data.message || 'حدث خطأ', 'error'); }
+    }
+
+    loadBrands();
+</script>
+</body>
+</html>

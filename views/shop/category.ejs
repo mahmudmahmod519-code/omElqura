@@ -1,0 +1,116 @@
+<%- include('../partials/header', { title: 'التصنيف' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1 id="categoryName">التصنيف</h1>
+        <p>عطور هذا التصنيف</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 2rem;">
+        <aside class="filter-sidebar">
+            <h3><i class="fas fa-filter"></i> الفلاتر</h3>
+            <div class="filter-group">
+                <label>الماركة</label>
+                <select class="form-control" id="brandFilter">
+                    <option value="">الكل</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>السعر</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="number" class="form-control" id="minPrice" placeholder="من">
+                    <input type="number" class="form-control" id="maxPrice" placeholder="إلى">
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="applyFilters()" data-track="apply_filters">
+                <i class="fas fa-check"></i> تطبيق
+            </button>
+        </aside>
+
+        <div>
+            <div id="productsGrid" class="grid grid-3">
+                <div class="skeleton" style="height: 350px;"></div>
+                <div class="skeleton" style="height: 350px;"></div>
+                <div class="skeleton" style="height: 350px;"></div>
+            </div>
+            <div id="pagination" class="pagination"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    const categorySlug = '<%= typeof categorySlug !== 'undefined' ? categorySlug : "" %>';
+    let categoryId = null;
+
+    async function loadCategory() {
+        const res = await apiFetch('/categories/api/v1');
+        if (res.ok) {
+            const category = res.data.data.find(c => c.slug === categorySlug);
+            if (category) {
+                categoryId = category.id;
+                document.getElementById('categoryName').textContent = category.name;
+                document.title = category.name + ' - عطور أم القرى';
+                loadProducts();
+            }
+        }
+    }
+
+    async function loadBrands() {
+        const res = await apiFetch('/brands/api/v1');
+        if (res.ok) {
+            const select = document.getElementById('brandFilter');
+            res.data.data.forEach(brand => {
+                select.innerHTML += `<option value="${brand.id}">${brand.name}</option>`;
+            });
+        }
+    }
+
+    async function loadProducts(page = 1) {
+        if (!categoryId) return;
+        const grid = document.getElementById('productsGrid');
+        grid.innerHTML = '<div class="skeleton" style="height: 350px;"></div>'.repeat(3);
+
+        const brand = document.getElementById('brandFilter').value;
+        const minPrice = document.getElementById('minPrice').value;
+        const maxPrice = document.getElementById('maxPrice').value;
+
+        const params = new URLSearchParams({ page, limit: 12, category_id: categoryId });
+        if (brand) params.append('brand_id', brand);
+        if (minPrice) params.append('min_price', minPrice);
+        if (maxPrice) params.append('max_price', maxPrice);
+
+        const res = await apiFetch(`/perfumes/api/v1?${params}`);
+
+        if (res.ok && res.data.data.length > 0) {
+            grid.innerHTML = res.data.data.map(perfume => `
+                <a href="/perfumes/${perfume.id}" class="product-card" data-track="product_card">
+                    <img src="${perfume.image_url || '/images/placeholder.jpg'}" alt="${perfume.name}" class="product-card-image">
+                    <div class="product-card-body">
+                        <h3 class="product-card-title">${perfume.name}</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">${perfume.brand?.name || ''}</p>
+                        <p class="product-card-price">${formatPrice(perfume.price)}</p>
+                    </div>
+                </a>
+            `).join('');
+
+            const pagination = document.getElementById('pagination');
+            let paginationHTML = '';
+            for (let i = 1; i <= res.data.pagination.totalPages; i++) {
+                paginationHTML += `<a href="#" class="${i === page ? 'active' : ''}" onclick="loadProducts(${i}); return false;">${i}</a>`;
+            }
+            pagination.innerHTML = paginationHTML;
+        } else {
+            grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>لا توجد منتجات في هذا التصنيف</p></div>';
+        }
+    }
+
+    function applyFilters() { loadProducts(1); }
+
+    loadCategory();
+    loadBrands();
+</script>
+</body>
+</html>

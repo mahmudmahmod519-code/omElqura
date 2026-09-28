@@ -1,0 +1,155 @@
+<%- include('../partials/header', { title: isEdit ? 'تعديل عطر' : 'إضافة عطر' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1><%= isEdit ? 'تعديل عطر' : 'إضافة عطر جديد' %></h1>
+        <p><%= isEdit ? 'تحديث بيانات العطر' : 'أضف عطر جديد للمتجر' %></p>
+    </div>
+
+    <div style="max-width: 700px; margin: 0 auto;">
+        <div id="formContent">
+            <div class="skeleton" style="height: 500px;"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    const isEdit = <%= isEdit %>;
+    const perfumeId = '<%= typeof perfumeId !== 'undefined' ? perfumeId : '' %>';
+
+    async function loadForm() {
+        const container = document.getElementById('formContent');
+
+        const [categoriesRes, brandsRes] = await Promise.all([
+            apiFetch('/categories/api/v1'),
+            apiFetch('/brands/api/v1')
+        ]);
+
+        let perfume = {};
+        if (isEdit) {
+            const res = await apiFetch(`/perfumes/api/v1/${perfumeId}`);
+            if (res.ok) perfume = res.data.data;
+        }
+
+        container.innerHTML = `
+            <div class="card" style="padding: 2rem;">
+                <div id="formAlert"></div>
+                <form id="perfumeForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label>اسم العطر</label>
+                        <input type="text" class="form-control" id="name" value="${perfume.name || ''}" required>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label>الماركة</label>
+                            <select class="form-control" id="brand_id" required>
+                                <option value="">اختر الماركة</option>
+                                ${brandsRes.ok ? brandsRes.data.data.map(b => `<option value="${b.id}" ${perfume.brand_id === b.id ? 'selected' : ''}>${b.name}</option>`).join('') : ''}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>التصنيف</label>
+                            <select class="form-control" id="category_id" required>
+                                <option value="">اختر التصنيف</option>
+                                ${categoriesRes.ok ? categoriesRes.data.data.map(c => `<option value="${c.id}" ${perfume.category_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('') : ''}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label>السعر</label>
+                            <input type="number" class="form-control" id="price" value="${perfume.price || ''}" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>المخزون</label>
+                            <input type="number" class="form-control" id="stock_quantity" value="${perfume.stock_quantity || 0}" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الوصف</label>
+                        <textarea class="form-control" id="description" rows="4">${perfume.description || ''}</textarea>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label>العائلة العطرية</label>
+                            <input type="text" class="form-control" id="fragrance_family" value="${perfume.fragrance_family || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>التركيز</label>
+                            <select class="form-control" id="concentration">
+                                <option value="">اختر التركيز</option>
+                                ${['Parfum', 'EDP', 'EDT', 'Cologne'].map(c => `<option value="${c}" ${perfume.concentration === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الصورة</label>
+                        <input type="file" class="form-control" id="image" accept="image/*">
+                        ${perfume.image_url ? `<img src="${perfume.image_url}" style="max-width: 200px; margin-top: 0.5rem; border-radius: var(--radius);">` : ''}
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="is_best_seller" ${perfume.is_best_seller ? 'checked' : ''}>
+                            الأكثر مبيعاً
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;" id="submitBtn" data-track="save_perfume">
+                        <%= isEdit ? 'تحديث العطر' : 'إضافة العطر' %>
+                    </button>
+                </form>
+            </div>
+        `;
+
+        document.getElementById('perfumeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const alertDiv = document.getElementById('formAlert');
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('brand_id', document.getElementById('brand_id').value);
+            formData.append('category_id', document.getElementById('category_id').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('stock_quantity', document.getElementById('stock_quantity').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('fragrance_family', document.getElementById('fragrance_family').value);
+            formData.append('concentration', document.getElementById('concentration').value);
+            formData.append('is_best_seller', document.getElementById('is_best_seller').checked);
+
+            const imageFile = document.getElementById('image').files[0];
+            if (imageFile) formData.append('image', imageFile);
+
+            const url = isEdit ? `/perfumes/api/v1/${perfumeId}` : '/perfumes/api/v1';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const res = await apiFetch(url, { method, body: formData });
+
+            if (res.ok && res.data.status === 'success') {
+                alertDiv.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${isEdit ? 'تم تحديث' : 'تم إضافة'} العطر بنجاح!</div>`;
+                setTimeout(() => window.location.href = '/perfumes/admin', 1000);
+            } else {
+                const errors = res.data.errors ? res.data.errors.join('<br>') : (res.data.message || 'حدث خطأ');
+                alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${errors}</div>`;
+                btn.innerHTML = '<span><%= isEdit ? "تحديث العطر" : "إضافة العطر" %></span>';
+                btn.disabled = false;
+            }
+        });
+    }
+
+    loadForm();
+</script>
+</body>
+</html>

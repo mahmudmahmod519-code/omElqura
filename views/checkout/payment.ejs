@@ -1,0 +1,116 @@
+<%- include('../partials/header', { title: 'الدفع' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>إتمام الدفع</h1>
+        <p>اختر طريقة الدفع المناسبة لك</p>
+    </div>
+
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div id="paymentContent">
+            <div class="skeleton" style="height: 300px;"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    const orderId = '<%= orderId %>';
+
+    async function loadOrder() {
+        const container = document.getElementById('paymentContent');
+        const res = await apiFetch(`/orders/api/v1/my-orders`);
+
+        if (res.ok) {
+            const order = res.data.data.find(o => o.id == orderId);
+            if (order) {
+                container.innerHTML = `
+                    <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: var(--primary); margin-bottom: 1rem;">ملخص الطلب</h3>
+                        <p><strong>رقم الطلب:</strong> #${order.id}</p>
+                        <p><strong>الإجمالي:</strong> ${formatPrice(order.total_amount)}</p>
+                    </div>
+
+                    <div class="card" style="padding: 2rem;">
+                        <h3 style="color: var(--primary); margin-bottom: 1.5rem;">اختر طريقة الدفع</h3>
+                        <div id="paymentAlert"></div>
+
+                        <div style="display: grid; gap: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border: 2px solid #e5e7eb; border-radius: var(--radius); cursor: pointer; transition: var(--transition-fast);">
+                                <input type="radio" name="payment" value="instapay" checked>
+                                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem;">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                <div>
+                                    <strong>InstaPay</strong>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem;">تحويل بنكي عبر InstaPay</p>
+                                </div>
+                            </label>
+
+                            <label style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border: 2px solid #e5e7eb; border-radius: var(--radius); cursor: pointer; transition: var(--transition-fast);">
+                                <input type="radio" name="payment" value="paymob">
+                                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem;">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div>
+                                    <strong>Paymob</strong>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem;">دفع إلكتروني عبر Paymob</p>
+                                </div>
+                            </label>
+
+                            <label style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border: 2px solid #e5e7eb; border-radius: var(--radius); cursor: pointer; transition: var(--transition-fast);">
+                                <input type="radio" name="payment" value="cash">
+                                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem;">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div>
+                                    <strong>الدفع عند الاستلام</strong>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem;">ادفع نقداً عند استلام طلبك</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;" id="payBtn" onclick="processPayment()" data-track="confirm_payment">
+                            <i class="fas fa-check"></i> تأكيد الطلب
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async function processPayment() {
+        const btn = document.getElementById('payBtn');
+        const alertDiv = document.getElementById('paymentAlert');
+        const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+        btn.disabled = true;
+
+        const res = await apiFetch('/orders/api/v1/checkout', {
+            method: 'POST',
+            body: JSON.stringify({ payment_method: paymentMethod })
+        });
+
+        if (res.ok && res.data.success) {
+            if (paymentMethod === 'instapay') {
+                window.location.href = res.data.redirectUrl || `/orders/${orderId}/upload-receipt`;
+            } else if (paymentMethod === 'cash') {
+                showToast('تم إنشاء الطلب بنجاح!');
+                setTimeout(() => window.location.href = '/orders/profile/orders', 1000);
+            } else {
+                showToast('جاري التحويل لصفحة الدفع...');
+            }
+        } else {
+            alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${res.data.message || 'حدث خطأ'}</div>`;
+            btn.innerHTML = '<i class="fas fa-check"></i> تأكيد الطلب';
+            btn.disabled = false;
+        }
+    }
+
+    loadOrder();
+</script>
+</body>
+</html>

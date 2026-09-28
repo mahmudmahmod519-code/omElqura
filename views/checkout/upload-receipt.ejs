@@ -1,0 +1,103 @@
+<%- include('../partials/header', { title: 'رفع الإيصال' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>رفع إيصال الدفع</h1>
+        <p>ارفع صورة إيصال التحويل البنكي</p>
+    </div>
+
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div id="receiptContent">
+            <div class="skeleton" style="height: 300px;"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    const orderId = '<%= orderId %>';
+
+    async function loadOrder() {
+        const container = document.getElementById('receiptContent');
+        const res = await apiFetch(`/orders/api/v1/my-orders`);
+
+        if (res.ok) {
+            const order = res.data.data.find(o => o.id == orderId);
+            if (order) {
+                container.innerHTML = `
+                    <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: var(--primary); margin-bottom: 1rem;">معلومات الطلب</h3>
+                        <p><strong>رقم الطلب:</strong> #${order.id}</p>
+                        <p><strong>الإجمالي:</strong> ${formatPrice(order.total_amount)}</p>
+                    </div>
+
+                    <div class="card" style="padding: 2rem;">
+                        <h3 style="color: var(--primary); margin-bottom: 1rem;">تعليمات InstaPay</h3>
+                        <div style="background: rgba(212, 184, 150, 0.1); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem;">
+                            <p style="margin-bottom: 0.5rem;">1. قم بتحويل المبلغ إلى حساب InstaPay التالي:</p>
+                            <p style="font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">@umalqura-perfumes</p>
+                            <p style="margin-bottom: 0.5rem;">2. احتفظ بصورة الإيصال</p>
+                            <p>3. ارفع الصورة هنا</p>
+                        </div>
+
+                        <div id="uploadAlert"></div>
+
+                        <form id="uploadForm">
+                            <div class="form-group">
+                                <label>صورة الإيصال</label>
+                                <input type="file" class="form-control" id="receipt" accept="image/*" required>
+                                <div id="preview" style="margin-top: 1rem;"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%;" id="uploadBtn" data-track="upload_receipt">
+                                <i class="fas fa-upload"></i> رفع الإيصال
+                            </button>
+                        </form>
+                    </div>
+                `;
+
+                document.getElementById('receipt').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            document.getElementById('preview').innerHTML = `<img src="${e.target.result}" style="max-width: 100%; border-radius: var(--radius);">`;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById('uploadBtn');
+                    const alertDiv = document.getElementById('uploadAlert');
+
+                    const formData = new FormData();
+                    formData.append('receipt', document.getElementById('receipt').files[0]);
+
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
+                    btn.disabled = true;
+
+                    const res = await apiFetch(`/orders/api/v1/${orderId}/upload-receipt`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (res.ok && res.data.success) {
+                        alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم رفع الإيصال بنجاح! جاري التحويل...</div>';
+                        setTimeout(() => window.location.href = '/orders/profile/orders', 1500);
+                    } else {
+                        alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${res.data.message || 'حدث خطأ'}</div>`;
+                        btn.innerHTML = '<i class="fas fa-upload"></i> رفع الإيصال';
+                        btn.disabled = false;
+                    }
+                });
+            }
+        }
+    }
+
+    loadOrder();
+</script>
+</body>
+</html>

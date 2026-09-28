@@ -1,0 +1,15 @@
+<%- include('../partials/header', { title: 'صفحة غير موجودة' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="empty-state" style="padding: 6rem 2rem;">
+        <div style="font-size: 8rem; font-weight: 800; color: var(--primary);">404</div>
+        <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;">الصفحة غير موجودة</h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p>
+        <a href="/" class="btn btn-primary" data-track="back_to_home"><i class="fas fa-home"></i> العودة للرئيسية</a>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<%- include('../partials/header', { title: 'لوحة التحكم' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>لوحة التحكم</h1>
+        <p>نظرة عامة على المتجر</p>
+    </div>
+
+    <div id="dashboardContent">
+        <div class="grid grid-4">
+            <div class="skeleton" style="height: 150px;"></div>
+            <div class="skeleton" style="height: 150px;"></div>
+            <div class="skeleton" style="height: 150px;"></div>
+            <div class="skeleton" style="height: 150px;"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadDashboard() {
+        const container = document.getElementById('dashboardContent');
+
+        const [ordersRes, perfumesRes, usersRes] = await Promise.all([
+            apiFetch('/orders/api/v1/admin/all'),
+            apiFetch('/perfumes/api/v1?limit=100'),
+            apiFetch('/users/api/v1/admin/all?limit=100')
+        ]);
+
+        const orders = ordersRes.ok ? ordersRes.data.data : [];
+        const perfumes = perfumesRes.ok ? perfumesRes.data.data : [];
+        const users = usersRes.ok ? usersRes.data.data : [];
+
+        const totalSales = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        const pendingOrders = orders.filter(o => o.order_status === 'pending_approval').length;
+        const lowStock = perfumes.filter(p => p.stock_quantity < 5).length;
+
+        container.innerHTML = `
+            <div class="grid grid-4" style="margin-bottom: 2rem;">
+                <div class="card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2.5rem; color: var(--primary); font-weight: 800;">${orders.length}</div>
+                    <p style="color: var(--text-muted);">إجمالي الطلبات</p>
+                </div>
+                <div class="card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2.5rem; color: var(--secondary); font-weight: 800;">${formatPrice(totalSales)}</div>
+                    <p style="color: var(--text-muted);">إجمالي المبيعات</p>
+                </div>
+                <div class="card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2.5rem; color: var(--warning); font-weight: 800;">${users.length}</div>
+                    <p style="color: var(--text-muted);">المستخدمين</p>
+                </div>
+                <div class="card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2.5rem; color: var(--error); font-weight: 800;">${lowStock}</div>
+                    <p style="color: var(--text-muted);">مخزون منخفض</p>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card" style="padding: 1.5rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">أحدث الطلبات</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>العميل</th>
+                                    <th>المبلغ</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orders.slice(0, 5).map(o => `
+                                    <tr>
+                                        <td>#${o.id}</td>
+                                        <td>${o.user_name || '-'}</td>
+                                        <td>${formatPrice(o.total_amount)}</td>
+                                        <td><span class="badge ${getStatusBadge(o.order_status)}">${getStatusText(o.order_status)}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 1.5rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 1rem;">تنبيهات المخزون</h3>
+                    ${lowStock > 0 ? perfumes.filter(p => p.stock_quantity < 5).slice(0, 5).map(p => `
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
+                            <span>${p.name}</span>
+                            <span class="badge badge-error">متبقي: ${p.stock_quantity}</span>
+                        </div>
+                    `).join('') : '<p style="color: var(--text-muted);">لا توجد تنبيهات</p>'}
+                </div>
+            </div>
+        `;
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'pending_approval': 'badge-warning',
+            'processing': 'badge-info',
+            'shipped': 'badge-info',
+            'delivered': 'badge-success',
+            'cancelled': 'badge-error'
+        };
+        return badges[status] || 'badge-info';
+    }
+
+    function getStatusText(status) {
+        const texts = {
+            'pending_approval': 'قيد المراجعة',
+            'processing': 'جاري التجهيز',
+            'shipped': 'تم الشحن',
+            'delivered': 'تم التوصيل',
+            'cancelled': 'ملغي'
+        };
+        return texts[status] || status;
+    }
+
+    loadDashboard();
+</script>
+</body>
+</html>

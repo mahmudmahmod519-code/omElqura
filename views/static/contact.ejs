@@ -1,0 +1,83 @@
+<%- include('../partials/header', { title: 'اتصل بنا' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>اتصل بنا</h1>
+        <p>نحن هنا لمساعدتك</p>
+    </div>
+
+    <div class="grid grid-2" style="max-width: 1000px; margin: 0 auto;">
+        <div class="card" style="padding: 2rem;">
+            <h2 style="color: var(--primary); margin-bottom: 1.5rem;">معلومات التواصل</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-envelope" style="color: var(--secondary);"></i> البريد الإلكتروني</h4>
+                <p style="color: var(--text-muted);">info@umalqura.com</p>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-phone" style="color: var(--secondary);"></i> الهاتف</h4>
+                <p style="color: var(--text-muted);">01000000000</p>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-map-marker-alt" style="color: var(--secondary);"></i> العنوان</h4>
+                <p style="color: var(--text-muted);">القاهرة، مصر</p>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-clock" style="color: var(--secondary);"></i> أوقات العمل</h4>
+                <p style="color: var(--text-muted);">السبت - الخميس: 9 صباحاً - 9 مساءً</p>
+                <p style="color: var(--text-muted);">الجمعة: 2 ظهراً - 9 مساءً</p>
+            </div>
+            <div>
+                <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-share-alt" style="color: var(--secondary);"></i> وسائل التواصل</h4>
+                <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                    <a href="#" style="font-size: 1.5rem; color: var(--secondary);"><i class="fab fa-facebook"></i></a>
+                    <a href="#" style="font-size: 1.5rem; color: var(--secondary);"><i class="fab fa-instagram"></i></a>
+                    <a href="#" style="font-size: 1.5rem; color: var(--secondary);"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 2rem;">
+            <h2 style="color: var(--primary); margin-bottom: 1.5rem;">أرسل لنا رسالة</h2>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label>الاسم</label>
+                    <input type="text" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>الموضوع</label>
+                    <input type="text" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>الرسالة</label>
+                    <textarea class="form-control" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" data-track="contact_submit">
+                    <i class="fas fa-paper-plane"></i> إرسال
+                </button>
+            </form>
+            <div id="contactResult"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    document.getElementById('contactForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const resultDiv = document.getElementById('contactResult');
+        resultDiv.innerHTML = '<div class="spinner"></div>';
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.</div>';
+        e.target.reset();
+    });
+</script>
+</body>
+</html>

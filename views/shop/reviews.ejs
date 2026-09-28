@@ -1,0 +1,130 @@
+<%- include('../partials/header', { title: 'التقييمات' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>تقييمات العطر</h1>
+        <p>آراء العملاء حول هذا العطر</p>
+    </div>
+
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div id="summarySection" style="text-align: center; margin-bottom: 2rem;">
+            <div class="skeleton" style="height: 100px; width: 200px; margin: 0 auto;"></div>
+        </div>
+
+        <% if (login) { %>
+            <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">أضف تقييمك</h3>
+                <div id="reviewAlert"></div>
+                <form id="reviewForm">
+                    <div class="form-group">
+                        <label>التقييم</label>
+                        <div class="star-rating" id="starRating">
+                            <span class="star" data-rating="1"><i class="fas fa-star"></i></span>
+                            <span class="star" data-rating="2"><i class="fas fa-star"></i></span>
+                            <span class="star" data-rating="3"><i class="fas fa-star"></i></span>
+                            <span class="star" data-rating="4"><i class="fas fa-star"></i></span>
+                            <span class="star" data-rating="5"><i class="fas fa-star"></i></span>
+                        </div>
+                        <input type="hidden" id="rating" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>التعليق</label>
+                        <textarea class="form-control" id="comment" rows="4" placeholder="شاركنا رأيك في هذا العطر..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="submitBtn" data-track="submit_review">إرسال التقييم</button>
+                </form>
+            </div>
+        <% } %>
+
+        <div id="reviewsList">
+            <div class="skeleton" style="height: 150px; margin-bottom: 1rem;"></div>
+            <div class="skeleton" style="height: 150px; margin-bottom: 1rem;"></div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    const perfumeId = '<%= perfumeId %>';
+    let selectedRating = 5;
+
+    document.querySelectorAll('#starRating .star').forEach(star => {
+        star.addEventListener('click', () => {
+            selectedRating = parseInt(star.dataset.rating);
+            document.getElementById('rating').value = selectedRating;
+            updateStars();
+        });
+    });
+
+    function updateStars() {
+        document.querySelectorAll('#starRating .star').forEach(star => {
+            star.classList.toggle('active', parseInt(star.dataset.rating) <= selectedRating);
+        });
+    }
+
+    async function loadReviews() {
+        const listContainer = document.getElementById('reviewsList');
+        const summaryContainer = document.getElementById('summarySection');
+        const res = await apiFetch(`/reviews/api/v1/perfume/${perfumeId}`);
+
+        if (res.ok) {
+            summaryContainer.innerHTML = `
+                <div style="font-size: 3rem; font-weight: 800; color: var(--primary);">${res.data.summary.avg_rating}</div>
+                <div style="font-size: 1.5rem; color: var(--warning);"><i class="fas fa-star"></i></div>
+                <p style="color: var(--text-muted);">(${res.data.summary.total_reviews} تقييم)</p>
+            `;
+
+            if (res.data.data.length > 0) {
+                listContainer.innerHTML = res.data.data.map(review => `
+                    <div class="card" style="padding: 1.5rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <strong>${review.user_name}</strong>
+                            <div>
+                                <span style="color: var(--warning);"><i class="fas fa-star"></i> ${review.rating}</span>
+                                <span style="color: var(--text-muted); font-size: 0.8rem; margin-right: 0.5rem;">${formatDate(review.created_at)}</span>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-muted);">${review.comment || 'لا يوجد تعليق'}</p>
+                    </div>
+                `).join('');
+            } else {
+                listContainer.innerHTML = '<div class="empty-state"><p>لا توجد تقييمات بعد</p></div>';
+            }
+        }
+    }
+
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const alertDiv = document.getElementById('reviewAlert');
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+            btn.disabled = true;
+
+            const res = await apiFetch('/reviews/api/v1', {
+                method: 'POST',
+                body: JSON.stringify({ perfume_id: parseInt(perfumeId), rating: selectedRating, comment: document.getElementById('comment').value })
+            });
+
+            if (res.ok && res.data.status === 'success') {
+                alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم إضافة التقييم بنجاح!</div>';
+                reviewForm.reset();
+                loadReviews();
+            } else {
+                alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${res.data.message || 'حدث خطأ'}</div>`;
+            }
+
+            btn.innerHTML = '<span>إرسال التقييم</span>';
+            btn.disabled = false;
+        });
+    }
+
+    updateStars();
+    loadReviews();
+</script>
+</body>
+</html>

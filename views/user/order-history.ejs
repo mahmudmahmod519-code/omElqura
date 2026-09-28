@@ -1,0 +1,90 @@
+<%- include('../partials/header', { title: 'سجل الطلبات' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>سجل الطلبات</h1>
+        <p>متابعة جميع طلباتك السابقة</p>
+    </div>
+
+    <div id="ordersContent">
+        <div class="skeleton" style="height: 200px;"></div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadOrders() {
+        const container = document.getElementById('ordersContent');
+        const res = await apiFetch('/orders/api/v1/my-orders');
+
+        if (res.ok && res.data.data.length > 0) {
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>التاريخ</th>
+                                <th>المنتجات</th>
+                                <th>الإجمالي</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${res.data.data.map(order => `
+                                <tr>
+                                    <td>#${order.id}</td>
+                                    <td>${formatDate(order.created_at)}</td>
+                                    <td>${order.items_summary || '-'}</td>
+                                    <td>${formatPrice(order.total_amount)}</td>
+                                    <td>
+                                        <span class="badge ${getStatusBadge(order.order_status)}">
+                                            ${getStatusText(order.order_status)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-box-open"></i></div>
+                    <h3>لا توجد طلبات</h3>
+                    <p>لم تقم بأي طلبات بعد</p>
+                    <a href="/perfumes" class="btn btn-primary" data-track="start_shopping">تسوق الآن</a>
+                </div>
+            `;
+        }
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'pending_approval': 'badge-warning',
+            'processing': 'badge-info',
+            'shipped': 'badge-info',
+            'delivered': 'badge-success',
+            'cancelled': 'badge-error'
+        };
+        return badges[status] || 'badge-info';
+    }
+
+    function getStatusText(status) {
+        const texts = {
+            'pending_approval': 'قيد المراجعة',
+            'processing': 'جاري التجهيز',
+            'shipped': 'تم الشحن',
+            'delivered': 'تم التوصيل',
+            'cancelled': 'ملغي'
+        };
+        return texts[status] || status;
+    }
+
+    loadOrders();
+</script>
+</body>
+</html>

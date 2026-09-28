@@ -1,0 +1,108 @@
+<%- include('../partials/header', { title: 'إدارة الطلبات' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>إدارة الطلبات</h1>
+        <p>مراجعة وإدارة طلبات العملاء</p>
+    </div>
+
+    <div id="ordersContent">
+        <div class="skeleton" style="height: 400px;"></div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadOrders() {
+        const container = document.getElementById('ordersContent');
+        const res = await apiFetch('/orders/api/v1/admin/all');
+
+        if (res.ok && res.data.data.length > 0) {
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>العميل</th>
+                                <th>المبلغ</th>
+                                <th>طريقة الدفع</th>
+                                <th>حالة الدفع</th>
+                                <th>حالة الطلب</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${res.data.data.map(order => `
+                                <tr>
+                                    <td>#${order.id}</td>
+                                    <td>${order.user_name || '-'}<br><small style="color: var(--text-muted);">${order.user_email || ''}</small></td>
+                                    <td>${formatPrice(order.total_amount)}</td>
+                                    <td>${getPaymentMethod(order.payment_method)}</td>
+                                    <td><span class="badge ${getPaymentBadge(order.payment_status)}">${getPaymentText(order.payment_status)}</span></td>
+                                    <td><span class="badge ${getStatusBadge(order.order_status)}">${getStatusText(order.order_status)}</span></td>
+                                    <td>
+                                        ${order.order_status === 'pending_approval' ? `
+                                            <button class="btn btn-ghost" style="padding: 4px 12px; color: var(--success);" onclick="approveOrder(${order.id})"><i class="fas fa-check"></i></button>
+                                            <button class="btn btn-ghost" style="padding: 4px 12px; color: var(--error);" onclick="rejectOrder(${order.id})"><i class="fas fa-times"></i></button>
+                                        ` : ''}
+                                        ${order.payment_proof ? `
+                                            <a href="${order.payment_proof}" target="_blank" class="btn btn-ghost" style="padding: 4px 12px;"><i class="fas fa-file"></i></a>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-state"><p>لا توجد طلبات</p></div>';
+        }
+    }
+
+    async function approveOrder(id) {
+        if (!confirm('هل أنت متأكد من الموافقة على هذا الطلب؟')) return;
+        const res = await apiFetch(`/orders/api/v1/admin/${id}/approve`, { method: 'PUT' });
+        if (res.ok) { showToast('تمت الموافقة على الطلب'); loadOrders(); }
+        else { showToast(res.data.message || 'حدث خطأ', 'error'); }
+    }
+
+    async function rejectOrder(id) {
+        if (!confirm('هل أنت متأكد من رفض هذا الطلب؟')) return;
+        const res = await apiFetch(`/orders/api/v1/admin/${id}/reject`, { method: 'PUT' });
+        if (res.ok) { showToast('تم رفض الطلب'); loadOrders(); }
+        else { showToast(res.data.message || 'حدث خطأ', 'error'); }
+    }
+
+    function getPaymentMethod(method) {
+        const methods = { 'instapay': 'InstaPay', 'paymob': 'Paymob', 'cash': 'نقدي' };
+        return methods[method] || method;
+    }
+
+    function getPaymentBadge(status) {
+        const badges = { 'pending': 'badge-warning', 'approved': 'badge-success', 'rejected': 'badge-error' };
+        return badges[status] || 'badge-info';
+    }
+
+    function getPaymentText(status) {
+        const texts = { 'pending': 'قيد الانتظار', 'approved': 'مدفوع', 'rejected': 'مرفوض' };
+        return texts[status] || status;
+    }
+
+    function getStatusBadge(status) {
+        const badges = { 'pending_approval': 'badge-warning', 'processing': 'badge-info', 'shipped': 'badge-info', 'delivered': 'badge-success', 'cancelled': 'badge-error' };
+        return badges[status] || 'badge-info';
+    }
+
+    function getStatusText(status) {
+        const texts = { 'pending_approval': 'قيد المراجعة', 'processing': 'جاري التجهيز', 'shipped': 'تم الشحن', 'delivered': 'تم التوصيل', 'cancelled': 'ملغي' };
+        return texts[status] || status;
+    }
+
+    loadOrders();
+</script>
+</body>
+</html>

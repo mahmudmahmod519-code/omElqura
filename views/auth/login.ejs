@@ -1,0 +1,72 @@
+<%- include('../partials/header', { title: 'تسجيل الدخول' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div style="max-width: 450px; margin: 2rem auto;">
+        <div class="card" style="padding: 3rem;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; color: var(--primary);">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2 style="color: var(--primary); margin-bottom: 0.5rem;">تسجيل الدخول</h2>
+                <p style="color: var(--text-muted);">مرحباً بعودتك! سجل دخولك للمتابعة</p>
+            </div>
+
+            <div id="loginAlert"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
+                    <input type="email" class="form-control" id="email" required placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <input type="password" class="form-control" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="loginBtn" data-track="login_submit">
+                    <span>تسجيل الدخول</span>
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <a href="/auth/forgot-password" style="color: var(--secondary); font-weight: 500;" data-track="forgot_password_link">نسيت كلمة المرور؟</a>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #f3f4f6;">
+                <p style="color: var(--text-muted);">ليس لديك حساب؟ <a href="/auth/register" style="color: var(--secondary); font-weight: 600;" data-track="register_link">إنشاء حساب</a></p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        const alertDiv = document.getElementById('loginAlert');
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+        btn.disabled = true;
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        const res = await apiFetch('/auth/api/v1/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+
+        if (res.ok && res.data.status === 'success') {
+            alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> تم تسجيل الدخول بنجاح! جاري التحويل...</div>';
+            setTimeout(() => window.location.href = '/', 1000);
+        } else {
+            alertDiv.innerHTML = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> ${res.data.message || 'حدث خطأ'}</div>`;
+            btn.innerHTML = '<span>تسجيل الدخول</span>';
+            btn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

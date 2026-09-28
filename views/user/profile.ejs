@@ -1,0 +1,67 @@
+<%- include('../partials/header', { title: 'الملف الشخصي' }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="page-header">
+        <h1>الملف الشخصي</h1>
+        <p>إدارة بياناتك الشخصية</p>
+    </div>
+
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div id="profileContent">
+            <div class="skeleton" style="height: 300px;"></div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a href="/users/profile/edit" class="btn btn-primary" style="flex: 1;" data-track="edit_profile"><i class="fas fa-edit"></i> تعديل البيانات</a>
+            <a href="/orders/profile/orders" class="btn btn-outline" style="flex: 1;" data-track="order_history"><i class="fas fa-box"></i> سجل الطلبات</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+    async function loadProfile() {
+        const container = document.getElementById('profileContent');
+        const res = await apiFetch('/users/api/v1/profile');
+
+        if (res.ok) {
+            const user = res.data.data;
+            container.innerHTML = `
+                <div class="card" style="padding: 2rem;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 1rem;">
+                            ${user.name.charAt(0)}
+                        </div>
+                        <h2 style="color: var(--primary);">${user.name}</h2>
+                        <span class="badge badge-info">${user.role === 'admin' ? 'مدير' : 'عميل'}</span>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <strong><i class="fas fa-envelope" style="color: var(--secondary);"></i> البريد الإلكتروني:</strong>
+                        <p style="color: var(--text-muted);">${user.email}</p>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong><i class="fas fa-phone" style="color: var(--secondary);"></i> رقم الهاتف:</strong>
+                        <p style="color: var(--text-muted);">${user.phone || 'غير محدد'}</p>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong><i class="fas fa-map-marker-alt" style="color: var(--secondary);"></i> العنوان:</strong>
+                        <p style="color: var(--text-muted);">${user.address || 'غير محدد'}</p>
+                    </div>
+                    <div>
+                        <strong><i class="fas fa-calendar" style="color: var(--secondary);"></i> تاريخ التسجيل:</strong>
+                        <p style="color: var(--text-muted);">${formatDate(user.created_at)}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> فشل في تحميل البيانات</div>';
+        }
+    }
+
+    loadProfile();
+</script>
+</body>
+</html>
